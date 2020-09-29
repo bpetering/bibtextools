@@ -1,1 +1,4 @@
-# bibtextools
+# bibtexutils
+
+Utilities for handling Bibtex
+
