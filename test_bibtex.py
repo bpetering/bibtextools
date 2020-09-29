@@ -34,8 +34,22 @@ class TestBibtexTokenize(unittest.TestCase):
         ), ['}', '}', '{double}', '{', '=', 'something', ',', '}', 'bar bat baz', '{', '=', 'title', ',', '}', 'foo', '{', '=', 'author', ',', 'ben', '{', 'book', '@']
         )
 
+        self.assertEqual(
+            bibtex_tokenize('''
+                @STRING( EB = "Encyclopedia Britannica" )
+
+                @book(something1995, title = 1995 # EB)
+                '''),
+            [')', 'EB', '#', '1995', '=', 'title', ',', 'something1995', '(', 'book', '@', ')', '"', 'Encyclopedia Britannica', '"', '=', 'EB', '(', 'STRING', '@']
+        )
+            
 
 class TestBibtexParse(unittest.TestCase):
+
+    def text_extensions_bad(self):
+        # Don't generate empty dict for @string
+        self.assertEqual(bibtex_parse('@string( foo = "bar" )'), [])
+        self.assertEqual(bibtex_parse('@string{ bar = {something else} }  @book{hmm2000, title="really " # bar}'), [{'type': 'book', 'cite_key': 'hmm2000', 'fields': {'title': 'really something else'}}])
 
     def test_simple(self):
         self.assertEqual(bibtex_parse('@book{ben, author="Ben Petering", title="Bibtex Parsing"}'), 
@@ -54,7 +68,7 @@ class TestBibtexParse(unittest.TestCase):
             number = {7},
             journal = {PLOS ONE},
             author = {Bloom, Vincent and Andrews, Stefanie and Bernard, Philippe},
-            month = jun,
+            month = "jun",
             year = {2016},
             pages = {e012345}
         }
@@ -73,7 +87,8 @@ class TestBibtexParse(unittest.TestCase):
                 'month': 'jun',
                 'year': '2016',
                 'pages': 'e012345'
-            }}]);
+            }}]
+        )
 
         s = '''
             @article{Fiddlesticks:1178,
@@ -81,7 +96,7 @@ class TestBibtexParse(unittest.TestCase):
             trueauthor = {Smith, John and Celeste, Mary and Jones, Davy},
             fromwhere = {CA,CA,CA},
             journal = {preprint},
-            title = {{Dangerous Sea Excursions}}
+            title = {Dangerous Sea Excursions}
         }
         '''
         
@@ -95,7 +110,26 @@ class TestBibtexParse(unittest.TestCase):
                 'journal': 'preprint',
                 'title': 'Dangerous Sea Excursions'
             }
-        }])
+        }]
+        )
+
+    def test_whole_file(self):
+        pass
+
+    def test_extensions(self):
+        s = '''
+                @STRING( EB = "Encyclopedia Britannica" )
+
+                @book(something1995, title = 1995 # EB)
+        '''
+        self.assertEqual(bibtex_parse(s), [{
+            'type': 'book',
+            'cite_key': 'something1995',
+            'fields': {
+                'title': '1995 Encyclopedia Britannica'
+            }
+        }]
+        )
 
 if __name__ == '__main__':
     unittest.main()
