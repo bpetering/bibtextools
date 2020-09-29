@@ -56,7 +56,7 @@ class TestBibtexParse(unittest.TestCase):
             author = {Bloom, Vincent and Andrews, Stefanie and Bernard, Philippe},
             month = jun,
             year = {2016},
-            pages = {e012345},
+            pages = {e012345}
         }
         '''
         self.assertEqual(bibtex_parse(s), [{
@@ -77,11 +77,11 @@ class TestBibtexParse(unittest.TestCase):
 
         s = '''
             @article{Fiddlesticks:1178,
-            author = {Smith, John and Jones, Indiana and Jones, Davy},
-            trueauthor = {Smith, John and Jones, Indiana and Jones, Davy},
+            author = {Smith, John and Celeste, Mary and Jones, Davy},
+            trueauthor = {Smith, John and Celeste, Mary and Jones, Davy},
             fromwhere = {CA,CA,CA},
             journal = {preprint},
-            title = {{Dangerous Archaeology: Land and Sea}},
+            title = {{Dangerous Sea Excursions}}
         }
         '''
         
