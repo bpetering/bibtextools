@@ -1,5 +1,5 @@
 import unittest
-from bibtex import bibtex_parse, bibtex_tokenize
+from parser import bibtex_parse, bibtex_tokenize
 
 
 # https://www.economics.utoronto.ca/osborne/latex/BIBTEX.HTM
