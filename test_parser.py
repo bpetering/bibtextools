@@ -8,6 +8,9 @@ from parser import bibtex_parse, bibtex_tokenize
 # https://www.math.uni-leipzig.de/~hellmund/LaTeX/bibtex2.pdf
 # http://www.bibtex.org/Using/
 
+# http://mirror.kumi.systems/ctan/biblio/bibtex/base/btxdoc.pdf
+# http://tug.ctan.org/info/bibtex/tamethebeast/ttb_en.pdf
+
 # http://tug.ctan.org/tex-archive/macros/latex/contrib/aguplus/sample.bib
 # https://www.stat.berkeley.edu/~spector/bibtex.pdf
 # https://shelah.logic.at/v1/eindex.html
@@ -26,6 +29,7 @@ class TestBibtexTokenize(unittest.TestCase):
             bibtex_tokenize('@article{something+something96,author="Author Name",title={Title}}'),
             ['}', '}', 'Title', '{', '=', 'title', ',', '"', 'Author Name', '"', '=', 'author', ',', 'something+something96', '{', 'article', '@']
         )
+
 
     def test_complex(self):
 
@@ -58,6 +62,33 @@ class TestBibtexParse(unittest.TestCase):
 
     def test_multiple_basic(self):
         pass
+
+    def test_comments(self):
+        self.assertEqual(bibtex_parse('''
+            foo bar bar
+            @book{somebody2000, title="Book's Title", author="Somebody P. Fiddlesticks", year=2000}
+        '''), [{'type': 'book', 'cite_key': 'somebody2000', 'fields': {'title': "Book's Title", 'author': 'Somebody P. Fiddlesticks', 'year': 2000}}]
+        )
+
+        s = '''
+        book{somebody2000, 
+            title = "Foo",
+            author = {Bar bat baz},
+            somethingelse = {{ fiddlesticks }} ,
+        }
+        blah
+        @article { authors1000000000, 
+            title={Article About Something},
+            authors={People}
+        }
+        '''
+        # Only 1 entry - other "commented out" by removing @
+        self.assertEqual(bibtex_parse(s),
+                [{'type': 'article', 'cite_key': 'authors1000000000', 'fields': {
+                    'title': 'Article About Something',
+                    'authors': 'People'
+                }}]
+        )
 
     def test_full(self):
         s = '''@article{bloom_oligopoly_2016,
