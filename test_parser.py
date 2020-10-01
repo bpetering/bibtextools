@@ -118,6 +118,29 @@ class TestBibtexParse(unittest.TestCase):
             }}
         ])
 
+        # Make sure @ sign in strings is handled properly
+        s = '''
+        article{authors2000,
+            title = {Email and the Invention of the @ Sign},
+            authors="Foo"
+        }
+        @article{authors2000,
+            title = "Email and the Invention of the @ Sign",
+            authors="Foo and Bar"
+        }
+
+        @book{somebody_1990,
+            title="Fidddlesticks"
+        }
+        '''
+        self.assertEqual(bibtex_parse(s), [
+            {'type': 'article', 'cite_key': 'authors2000', 'fields':
+                {'title': "Email and the Invention of the @ Sign",
+                 'authors': 'Foo and Bar'}
+            },
+            {'type': 'book', 'cite_key': 'somebody_1990', 'fields': {'title': 'Fiddlesticks'}}
+        ])
+
     def test_full(self):
         s = '''@article{bloom_oligopoly_2016,
             title = {The {Oligopoly} of {Large} {Mammals} in the {Digital} {Era}},

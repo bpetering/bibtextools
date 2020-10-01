@@ -37,6 +37,10 @@ class bibtex_tokenlist(list):
         return ret
 
 def strip_lt_whitespace(s):
+    if s is None:
+        return None
+    if s == '':
+        return ''
     i = 0
     j = 0
     s_len = len(s)
@@ -130,20 +134,22 @@ def bibtex_parse_entry_list(token_stack):
 
 def bibtex_parse_entry(token_stack):
     global EXPAND
-    if len(token_stack) < 4:
-        raise Exception("parse error, tokens={}".format(token_stack))  # TODO exception hierarchy
-    # Skip past any comments until we find a non-commented entry to parse
-    token = token_stack.pop()
-    while token != '@':
-        token = token_stack.pop()
     ret = {}
+    # Skip past any comments until we find a non-commented entry to parse
+    if not token_stack:
+        return ret
+    token = token_stack.pop()
+    while token != '@' and token_stack:
+        token = token_stack.pop()
+    if not token_stack:
+        return ret
     ret['type'] = token_stack.pop().lower()
     if token_stack[-1] not in ('{', '('):
         raise Exception("parse error, expected { or (" + ", tokens={}".format(token_stack))
     token_stack.pop()   # {
     ret['fields'] = bibtex_parse_field_list(token_stack)
     if '__cite_key' in ret['fields']:
-        ret['cite_key'] = ret['fields']['__cite_key']
+        ret['cite_key'] = ret['fields']['__cite_key'].lower()
         del ret['fields']['__cite_key']
     token_stack.pop()   # }
     # Handle 'entry' which isn't - it's a string definition
@@ -195,17 +201,18 @@ def bibtex_parse_field_value(token_stack):
         while token_stack[-1] not in (',', '}', ')'):
             value += str(token_stack.pop())
             value += ' '
-            
+        value = strip_lt_whitespace(value)
+
         # Handle string concatenation - TODO check semantics
         if '#' in value:
             parts = value.split('#')    # TODO split on regex r'\s*#\s*'
             tmp = parts[0].replace(' ', '').replace('\t', '')
             if tmp in EXPAND:
-                value = EXPAND[tmp] + parts[1]
+                value = strip_lt_whitespace(EXPAND[tmp] + parts[1])
             else:
                 tmp = parts[1].replace(' ', '').replace('\t', '')
                 if tmp in EXPAND:
-                    value = parts[0] + EXPAND[tmp]
+                    value = strip_lt_whitespace(parts[0] + EXPAND[tmp])
         # Handle unquoted strings and integers
         elif not (set(value) - set(string.digits)):
             value = int(value)
