@@ -24,9 +24,11 @@ import string
 # @string, @preamble, @comment
 # case sensitivity / insensitivity
 
+__all__ = ['bibtex_tokenize', 'bibtex_parse']
+
 EXPAND = {}
 
-class _bibtex_tokenlist(list):
+class bibtex_tokenlist(list):
     def __getitem__(self, key):
         try:
             ret = super().__getitem__(key)
@@ -34,11 +36,24 @@ class _bibtex_tokenlist(list):
             raise Exception("parse error, tokens = {}".format(self))
         return ret
 
+def strip_lt_whitespace(s):
+    i = 0
+    j = 0
+    s_len = len(s)
+    while i < s_len and s[i] in string.whitespace:
+        i += 1
+    s = s[i:]
+    sp_len = len(s)
+    i = sp_len - 1
+    while i > 0 and s[i] in string.whitespace:
+        i -= 1
+    return s[:i+1]
+
 def bibtex_parse(bibtex_str):
-    return _bibtex_parse_s(bibtex_str)
+    return bibtex_parse_s(bibtex_str)
 
 def bibtex_tokenize(bibtex_str):
-    token_stack = _bibtex_tokenlist()
+    token_stack = bibtex_tokenlist()
     i = 0
     curly_nesting_depth = 0
     bibtex_str_len = len(bibtex_str)
@@ -103,27 +118,30 @@ def bibtex_tokenize(bibtex_str):
     token_stack.reverse()
     return token_stack
 
-def _bibtex_parse_s(bibtex_str):
+def bibtex_parse_s(bibtex_str):
     token_stack = bibtex_tokenize(bibtex_str)
-    return _bibtex_parse_entry_list(token_stack)
+    return bibtex_parse_entry_list(token_stack)
 
-def _bibtex_parse_entry_list(token_stack):
+def bibtex_parse_entry_list(token_stack):
     ret = []
     while len(token_stack) > 0:
-        ret.append(_bibtex_parse_entry(token_stack))
+        ret.append(bibtex_parse_entry(token_stack))
     return [x for x in ret if x]
 
-def _bibtex_parse_entry(token_stack):
+def bibtex_parse_entry(token_stack):
     global EXPAND
-    if len(token_stack) < 4 or token_stack[-1] != '@':
+    if len(token_stack) < 4:
         raise Exception("parse error, tokens={}".format(token_stack))  # TODO exception hierarchy
-    token_stack.pop()   # @
+    # Skip past any comments until we find a non-commented entry to parse
+    token = token_stack.pop()
+    while token != '@':
+        token = token_stack.pop()
     ret = {}
     ret['type'] = token_stack.pop().lower()
     if token_stack[-1] not in ('{', '('):
         raise Exception("parse error, expected { or (" + ", tokens={}".format(token_stack))
     token_stack.pop()   # {
-    ret['fields'] = _bibtex_parse_field_list(token_stack)
+    ret['fields'] = bibtex_parse_field_list(token_stack)
     if '__cite_key' in ret['fields']:
         ret['cite_key'] = ret['fields']['__cite_key']
         del ret['fields']['__cite_key']
@@ -135,10 +153,10 @@ def _bibtex_parse_entry(token_stack):
         return {}
     return ret
 
-def _bibtex_parse_field_list(token_stack):
+def bibtex_parse_field_list(token_stack):
     fields = {}
     # Parse first field
-    field = _bibtex_parse_field(token_stack)
+    field = bibtex_parse_field(token_stack)
     # Handle cite key
     if field['value'] is None:
         fields['__cite_key'] = field['name']
@@ -147,23 +165,24 @@ def _bibtex_parse_field_list(token_stack):
     # Handle remaining fields, none of which can be a cite key
     while token_stack[-1] == ',':
         token_stack.pop()
-        field = _bibtex_parse_field(token_stack)
+        field = bibtex_parse_field(token_stack)
         fields[field['name']] = field['value']
     return fields
 
-def _bibtex_parse_field(token_stack):
+def bibtex_parse_field(token_stack):
     ret = {}
     ret['name'] = token_stack.pop()
     if token_stack[-1] != ',':
         if token_stack[-1] != '=':
             raise Exception("parse error, expected '=', tokens={}, ret={}".format(token_stack, ret))
         token_stack.pop()   # =
-        ret['value'] = _bibtex_parse_field_value(token_stack)
+        ret['value'] = bibtex_parse_field_value(token_stack)
+
     else:
         ret['value'] = None
     return ret
 
-def _bibtex_parse_field_value(token_stack):
+def bibtex_parse_field_value(token_stack):
     global EXPAND
     value = None
     if token_stack[-1] in ('"', '{'):
