@@ -90,6 +90,34 @@ class TestBibtexParse(unittest.TestCase):
                 }}]
         )
 
+        s = '''
+        A bunch of random junk that's a comment "{"}{} 
+
+        @article { authors1000000000, 
+            title={Article About Something},
+            authors={People}
+        }yoyoyoyoyoyoyoyoyo #$%^#$%^#$&#^*&#$%^&{}{}{}{}(()()()()
+
+        @BOOK( COOLAUTHOR2000, title = "COOL TITLE" )psidfo;iah;fha;sdhfaousgdfgasldigf }{}{}{
+
+        @book{another2020,title="cooler title", authors={{fiddlesticks and friends}}
+        }
+        something
+        '''
+        self.assertEqual(bibtex_parse(s), [
+            {'type': 'article', 'cite_key': 'authors1000000000', 'fields': {
+                'title': 'Article About Something',
+                'authors': 'People'
+            }},
+            {'type': 'book', 'cite_key': 'coolauthor2000', 'fields': {
+                'title': 'COOL TITLE'
+            }},
+            {'type': 'book', 'cite_key': 'another2020', 'fields': {
+                'title': 'cooler title', 
+                'authors': '{fiddlesticks and friends}'
+            }}
+        ])
+
     def test_full(self):
         s = '''@article{bloom_oligopoly_2016,
             title = {The {Oligopoly} of {Large} {Mammals} in the {Digital} {Era}},
